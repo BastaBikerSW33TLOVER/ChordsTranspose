@@ -1,67 +1,121 @@
 import 'package:flutter/material.dart';
 
 void main() {
-  runApp(MaterialApp(
-    home: Scaffold(
-      backgroundColor: Colors.teal[700],
-      appBar: AppBar(
-        title: Text(
-          'Chords Changer',
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            fontSize: 30,
+  runApp(
+    MaterialApp(
+      home: Scaffold(
+        backgroundColor: Colors.teal,
+        appBar: AppBar(
+          backgroundColor: Colors.black,
+          title: Text(
+            'PERSONAL INFORMATION',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w900,
+              letterSpacing: 2,
+              color: Colors.cyanAccent,
+              shadows: [
+                Shadow(
+                  color: Colors.black.withOpacity(0.6),
+                  blurRadius: 8,
+                  offset: Offset(2, 2),
+                ),
+              ],
+            ),
           ),
+          centerTitle: true,
         ),
-        backgroundColor: Colors.black87,
-      ),
-      body: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,  // Centers the Column vertically
-          children: [
-            // First Column
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,  // Centers the text horizontally in this column
-              children: [
-                Center(
-                  child: Text(
-                    'Column 1 - Item 1',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
-                ),
-                Center(
-                  child: Text(
-                    'Column 1 - Item 2',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
-                ),
-              ],
-            ),
-            SizedBox(height: 20), // Add spacing between columns
+        body: Center(
+          child: Column(
 
-            // Second Column
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.center,  // Centers the text horizontally in this column
-              children: [
-                Center(
-                  child: Text(
-                    'Column 2 - Item 1',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // spaceBetween Example
+              Container(
+                color: Colors.white,
+                margin: EdgeInsets.all(10),
+                width: 300,
+                height: 75,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Name:',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text('France Joseph Cabral',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
-                Center(
-                  child: Text(
-                    'Column 2 - Item 2',
-                    style: TextStyle(color: Colors.white, fontSize: 20),
-                  ),
+              ),
+
+
+              // spaceEvenly Example
+             Container (
+               color: Colors.greenAccent,
+               margin: EdgeInsets.symmetric(vertical: 10, horizontal: 15),
+                width: 300,
+                height: 75,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Age:',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text('24',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
-          ],
+              ),
+
+
+              // spaceAround Example
+              Container(
+                color: Colors.lightBlueAccent,
+                margin: EdgeInsets.fromLTRB(3, 3, 3, 3),
+                width: 300,
+                height: 75,
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text('Gender:',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black54,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text('Male',
+                      style: TextStyle(
+                        fontSize: 20,
+                        color: Colors.black87,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     ),
-  ));
+  );
 }
-
