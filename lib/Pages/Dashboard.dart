@@ -1,17 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:hahhhahaha/Pages/Listitems.dart';
 
-import 'Pages/Dashboard.dart';
 
-void main() {
-  runApp(
-    MaterialApp(
-      home: Listitems()
-    ));
-}
-
-class Profile extends StatelessWidget {
-  const Profile({super.key});
+class Dashboard extends StatelessWidget {
+  const Dashboard({super.key});
 
   @override
   Widget build(BuildContext context) {
