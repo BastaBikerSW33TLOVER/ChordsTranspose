@@ -14,7 +14,7 @@ class Itemcard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
 
-    Decoration
+
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8.0)),
 
