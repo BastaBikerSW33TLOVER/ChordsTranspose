@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:path_provider/path_provider.dart';
 
 void main() {
   runApp(ChordTransposerApp());
@@ -23,6 +25,7 @@ class ChordTransposerScreen extends StatefulWidget {
 class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
   final TextEditingController _controller = TextEditingController();
   int _semitoneShift = 0;
+  List<FileSystemEntity> savedFiles = [];
 
   final List<String> chromatic = [
     'C', 'C#', 'D', 'D#', 'E', 'F',
@@ -33,44 +36,59 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
     'Db': 'C#', 'Eb': 'D#', 'Gb': 'F#', 'Ab': 'G#', 'Bb': 'A#'
   };
 
-  String transposeChord(String chord, int shift) {
-    final match = RegExp(r'^([A-G][b#]?)(.*)$').firstMatch(chord);
-    if (match == null) return chord;
+  @override
+  void initState() {
+    super.initState();
+    loadSavedFiles();
+  }
 
-    String root = match.group(1)!;
-    String suffix = match.group(2)!;
+  Future<Directory> getAppDir() async {
+    return await getApplicationDocumentsDirectory();
+  }
 
-    // Convert flats to sharps
-    if (flatToSharp.containsKey(root)) {
-      root = flatToSharp[root]!;
-    }
+  Future<void> saveCurrentChords() async {
+    final content = getTransposedOutput().trim();
+    if (content.isEmpty) return;
 
-    int index = chromatic.indexOf(root);
-    if (index == -1) return chord;
+    final dir = await getAppDir();
+    final filename = 'chords_${DateTime.now().millisecondsSinceEpoch}.txt';
+    final file = File('${dir.path}/$filename');
 
-    int newIndex = (index + shift) % 12;
-    if (newIndex < 0) newIndex += 12;
+    await file.writeAsString(content);
 
-    return chromatic[newIndex] + suffix;
+    setState(() {
+      savedFiles.add(file);
+    });
+  }
+
+  Future<void> loadSavedFiles() async {
+    final dir = await getAppDir();
+    final files = dir.listSync().where((f) => f.path.endsWith('.txt')).toList();
+    setState(() {
+      savedFiles = files;
+    });
+  }
+
+  Future<void> deleteFile(File file) async {
+    await file.delete();
+    await loadSavedFiles();
+  }
+
+  Future<String> readFileContent(File file) async {
+    return await file.readAsString();
   }
 
   String getTransposedOutput() {
     final lines = _controller.text.trim().split('\n');
 
     return lines.map((line) {
-      // Keep comments or empty lines unchanged
-      if (line.trim().startsWith('//') || line.trim().isEmpty) {
-        return line;
-      }
+      if (line.trim().startsWith('//') || line.trim().isEmpty) return line;
 
-      // Split by space (preserve '-', '|', etc.)
-      final tokens = line.split(RegExp(r'(\\s+)')); // keeps spaces too
+      final tokens = line.split(RegExp(r'(\s+)'));
 
       final transposedLine = tokens.map((token) {
         final trimmed = token.trim();
-        if (trimmed == '-' || trimmed == '|' || trimmed.isEmpty) {
-          return token; // preserve spacing, dashes, etc.
-        }
+        if (trimmed == '-' || trimmed == '|' || trimmed.isEmpty) return token;
 
         final match = RegExp(r'^([A-Ga-g][b#]?)(.*)$').firstMatch(trimmed);
         if (match == null) return token;
@@ -78,7 +96,6 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
         String root = match.group(1)!.toUpperCase();
         String suffix = match.group(2)!;
 
-        // Convert flats to sharps
         if (flatToSharp.containsKey(root)) root = flatToSharp[root]!;
 
         int index = chromatic.indexOf(root);
@@ -89,51 +106,14 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
 
         return token.replaceFirst(match.group(1)!, chromatic[newIndex]);
       }).join('');
+
       return transposedLine;
     }).join('\n');
   }
 
-  void shiftSemitone(int delta) {
-    setState(() {
-      _semitoneShift += delta;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    final input = _controller.text;
-    final lines = input.split('\n');
-
-    final transposedText = lines.map((line) {
-      if (line.trim().startsWith('//') || line.trim().isEmpty) {
-        return line; // keep comments or blank lines
-      }
-
-      // Match chords like C, C#m, Bb7, F#maj7 — anything that starts with a chord root
-      final chordRegex = RegExp(r'([A-Ga-g][b#]?[^-\s]*)');
-
-      return line.replaceAllMapped(chordRegex, (match) {
-        String chord = match.group(1)!;
-
-        final matchParts = RegExp(r'^([A-Ga-g][b#]?)(.*)$').firstMatch(chord);
-        if (matchParts == null) return chord;
-
-        String root = matchParts.group(1)!.toUpperCase();
-        String suffix = matchParts.group(2)!;
-
-        if (flatToSharp.containsKey(root)) {
-          root = flatToSharp[root]!;
-        }
-
-        int index = chromatic.indexOf(root);
-        if (index == -1) return chord;
-
-        int newIndex = (index + _semitoneShift) % 12;
-        if (newIndex < 0) newIndex += 12;
-
-        return chromatic[newIndex] + suffix;
-      });
-    }).join('\n');
+    final transposedText = getTransposedOutput();
 
     return Scaffold(
       appBar: AppBar(
@@ -191,11 +171,50 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
                 style: TextStyle(fontSize: 16, color: Colors.white),
               ),
             ),
+            SizedBox(height: 10),
+            ElevatedButton.icon(
+              onPressed: saveCurrentChords,
+              icon: Icon(Icons.save),
+              label: Text('Save to File'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+            ),
+            SizedBox(height: 20),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: Text('Saved Files:', style: TextStyle(fontSize: 18)),
+            ),
+            SizedBox(height: 10),
+            Expanded(
+              child: ListView.builder(
+                itemCount: savedFiles.length,
+                itemBuilder: (context, index) {
+                  final file = File(savedFiles[index].path);
+                  final filename = file.path.split('/').last;
+                  return FutureBuilder(
+                    future: readFileContent(file),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return ListTile(title: Text('Loading...'));
+                      }
+                      return ListTile(
+                        title: Text(filename, style: TextStyle(color: Colors.white)),
+                        subtitle: Text(snapshot.data.toString(),
+                            style: TextStyle(color: Colors.white70)),
+                        trailing: IconButton(
+                          icon: Icon(Icons.delete, color: Colors.red),
+                          onPressed: () => deleteFile(file),
+                        ),
+                      );
+                    },
+                  );
+                },
+              ),
+            ),
           ],
         ),
       ),
     );
   }
-
-
 }
