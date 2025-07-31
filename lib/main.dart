@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
-
-void main() {
+import 'package:flutter/services.dart'; // For Clipboard
+import 'package:share_plus/share_plus.dart';void main() {
   runApp(ChordTransposerApp());
 }
 
@@ -48,18 +48,36 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
 
   Future<void> saveCurrentChords() async {
     final content = getTransposedOutput().trim();
-    if (content.isEmpty) return;
+    print("Saving content:\n$content"); // DEBUG
 
-    final dir = await getAppDir();
-    final filename = 'chords_${DateTime.now().millisecondsSinceEpoch}.txt';
-    final file = File('${dir.path}/$filename');
+    if (content.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Nothing to save')),
+      );
+      return;
+    }
 
-    await file.writeAsString(content);
+    try {
+      final dir = await getAppDir();
+      final filename = 'chords_${DateTime.now().millisecondsSinceEpoch}.txt';
+      final file = File('${dir.path}/$filename');
 
-    setState(() {
-      savedFiles.add(file);
-    });
+      await file.writeAsString(content);
+      await Future.delayed(Duration(milliseconds: 100)); // Wait to ensure write is complete
+      await loadSavedFiles();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Saved to $filename')),
+      );
+    } catch (e) {
+      print('Error saving file: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error saving file')),
+      );
+    }
   }
+
+
 
   Future<void> loadSavedFiles() async {
     final dir = await getAppDir();
@@ -84,11 +102,17 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
     return lines.map((line) {
       if (line.trim().startsWith('//') || line.trim().isEmpty) return line;
 
-      final tokens = line.split(RegExp(r'(\s+)'));
+      final tokens = RegExp(r'[A-Ga-g][b#]?[a-zA-Z0-9/()]*|--+|[-–—|]+|\s+')
+          .allMatches(line)
+          .map((match) => match.group(0)!)
+          .toList();
 
       final transposedLine = tokens.map((token) {
         final trimmed = token.trim();
-        if (trimmed == '-' || trimmed == '|' || trimmed.isEmpty) return token;
+        if (trimmed == '-' || trimmed == '--' || trimmed == '–' || trimmed == '—' || trimmed == '|') {
+          return token;
+        }
+
 
         final match = RegExp(r'^([A-Ga-g][b#]?)(.*)$').firstMatch(trimmed);
         if (match == null) return token;
@@ -179,6 +203,31 @@ class _ChordTransposerScreenState extends State<ChordTransposerScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.green,
               ),
+            ),
+            SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Clipboard.setData(ClipboardData(text: transposedText));
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('Copied to clipboard')),
+                    );
+                  },
+                  icon: Icon(Icons.copy),
+                  label: Text('Copy'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                ),
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Share.share(transposedText, subject: 'My Transposed Chords');
+                  },
+                  icon: Icon(Icons.share),
+                  label: Text('Share'),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                ),
+              ],
             ),
             SizedBox(height: 20),
             Align(
